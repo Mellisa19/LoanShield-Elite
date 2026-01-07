@@ -41,4 +41,3 @@ venv.bak/
 *.log
 .DS_Store
 Dataset/
-*.pkl
