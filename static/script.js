@@ -188,3 +188,28 @@ function addToFeed(data, result) {
         feed.removeChild(feed.lastChild);
     }
 }
+
+// --- Navigation Logic ---
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // Remove active class from all links
+        document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+
+        // Add active class to clicked link
+        link.classList.add('active');
+
+        // Hide all view sections
+        document.querySelectorAll('.view-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show target view
+        const targetId = link.getAttribute('data-target');
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+    });
+});

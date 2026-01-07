@@ -18,10 +18,10 @@
                 <span>LoanShield ELITE</span>
             </div>
             <nav class="nav-links">
-                <a href="#" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a href="#"><i class="fas fa-list-ul"></i> Loan Feed</a>
-                <a href="#"><i class="fas fa-user-shield"></i> Risk Hub</a>
-                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                <a href="#" class="active" data-target="view-dashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="#" data-target="view-loan-feed"><i class="fas fa-list-ul"></i> Loan Feed</a>
+                <a href="#" data-target="view-risk-hub"><i class="fas fa-user-shield"></i> Risk Hub</a>
+                <a href="#" data-target="view-settings"><i class="fas fa-cog"></i> Settings</a>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-info">
@@ -49,164 +49,191 @@
                 </div>
             </header>
 
-            <section class="dashboard-body">
-                <div class="header-text">
-                    <h1>Loan Risk Overview</h1>
-                    <p>Predicting credit defaults with real-time AI analysis.</p>
-                </div>
+            <div id="view-dashboard" class="view-section">
+                <section class="dashboard-body">
+                    <div class="header-text">
+                        <h1>Loan Risk Overview</h1>
+                        <p>Predicting credit defaults with real-time AI analysis.</p>
+                    </div>
 
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="icon-box blue"><i class="fas fa-microchip"></i></div>
-                        <div class="stat-info">
-                            <span class="label">Total Scanned</span>
-                            <span class="value">10,245</span>
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="icon-box blue"><i class="fas fa-microchip"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Total Scanned</span>
+                                <span class="value">10,245</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon-box red"><i class="fas fa-user-secret"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Risk Detected</span>
+                                <span class="value">342</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon-box green"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-info">
+                                <span class="label">System Accuracy</span>
+                                <span class="value">86.2%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon-box yellow"><i class="fas fa-bolt"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Detection Speed</span>
+                                <span class="value">42ms</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="icon-box red"><i class="fas fa-user-secret"></i></div>
-                        <div class="stat-info">
-                            <span class="label">Risk Detected</span>
-                            <span class="value">342</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="icon-box green"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-info">
-                            <span class="label">System Accuracy</span>
-                            <span class="value">86.2%</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="icon-box yellow"><i class="fas fa-bolt"></i></div>
-                        <div class="stat-info">
-                            <span class="label">Detection Speed</span>
-                            <span class="value">42ms</span>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="content-layout">
-                    <!-- Left Column: Live Feed -->
-                    <div class="left-col">
-                        <div class="panel live-feed">
+                    <div class="content-layout">
+                        <!-- Left Column: Live Feed -->
+                        <div class="left-col">
+                            <div class="panel live-feed">
+                                <div class="panel-header">
+                                    <h3>Live Transaction Feed</h3>
+                                    <span class="badge">Live</span>
+                                </div>
+                                <div class="feed-list" id="transactionFeed">
+                                    <!-- JS will populate this -->
+                                    <div class="feed-item fraud">
+                                        <div class="item-icon"><i class="fas fa-credit-card"></i></div>
+                                        <div class="item-details">
+                                            <p class="user">Transaction #8291</p>
+                                            <p class="meta">Balance: $2,450 | Income: $32,000</p>
+                                        </div>
+                                        <div class="item-status">
+                                            <span class="status-tag red">FRAUD</span>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item">
+                                        <div class="item-icon"><i class="fas fa-credit-card"></i></div>
+                                        <div class="item-details">
+                                            <p class="user">Transaction #8290</p>
+                                            <p class="meta">Balance: $420 | Income: $45,000</p>
+                                        </div>
+                                        <div class="item-status">
+                                            <span class="status-tag green">SAFE</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Predict Simulator -->
+                        <div class="right-col">
+                            <div class="panel predict-simulator">
+                                <div class="panel-header">
+                                    <h3>Fraud Simulator</h3>
+                                    <button id="stressTestBtn" class="btn-ghost" title="Stress Test (50 Trans)">
+                                        <i class="fas fa-microchip"></i> Simulate Load
+                                    </button>
+                                </div>
+                                <form id="predictionForm" class="simulate-form">
+                                    <div class="form-group">
+                                        <label>Student Status</label>
+                                        <select id="student" required>
+                                            <option value="No">No</option>
+                                            <option value="Yes">Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Credit Balance ($)</label>
+                                        <input type="number" id="balance" placeholder="e.g. 1500" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Annual Income (USD)</label>
+                                        <input type="number" id="income" placeholder="e.g. 45000" required>
+                                    </div>
+                                    <button type="submit" class="btn-primary">
+                                        <i class="fas fa-microchip"></i> Predict Loan Risk
+                                    </button>
+                                </form>
+
+                                <!-- Results and Explanation -->
+                                <div id="resultArea" class="result-area hidden">
+                                    <div id="resultBadge" class="result-badge">
+                                        <i id="resultIcon"></i>
+                                        <span id="resultText"></span>
+                                    </div>
+                                    
+                                    <div class="explanation-hub">
+                                        <h4><i class="fas fa-brain"></i> AI Reasoning Radar</h4>
+                                        <div id="riskTierContainer" class="risk-tier-badge">--</div>
+                                        <div id="reasoningList" class="reasoning-list">
+                                            <!-- LIME Reasons go here -->
+                                        </div>
+                                    </div>
+
+                                    <div class="prob-container">
+                                        <span class="prob-label">Global Risk Probability:</span>
+                                        <div class="prob-bar-bg">
+                                            <div id="probBar" class="prob-bar"></div>
+                                        </div>
+                                        <span id="probValue" class="prob-val">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel settings-panel">
+                                <h3>Sensitivity Control</h3>
+                                <div class="threshold-control">
+                                    <div class="slider-header">
+                                        <span>Catch Rate (Threshold)</span>
+                                        <span id="thresholdVal" class="value-highlight">0.30</span>
+                                    </div>
+                                    <input type="range" id="thresholdSlider" min="0.05" max="0.95" step="0.05" value="0.30">
+                                    <div class="slider-labels">
+                                        <span>High Sensitivity</span>
+                                        <span>Strict</span>
+                                    </div>
+                                </div>
+                                <p class="hint">Adjust the threshold to balance between <strong>Recall</strong> (catching defaults) and <strong>Precision</strong> (fewer False Alarms).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW Analytics Row -->
+                    <div class="analytics-row">
+                        <div class="panel chart-panel">
                             <div class="panel-header">
-                                <h3>Live Transaction Feed</h3>
-                                <span class="badge">Live</span>
+                                <h3>Probability Analytics (Live)</h3>
+                                <i class="fas fa-chart-area"></i>
                             </div>
-                            <div class="feed-list" id="transactionFeed">
-                                <!-- JS will populate this -->
-                                <div class="feed-item fraud">
-                                    <div class="item-icon"><i class="fas fa-credit-card"></i></div>
-                                    <div class="item-details">
-                                        <p class="user">Transaction #8291</p>
-                                        <p class="meta">Balance: $2,450 | Income: $32,000</p>
-                                    </div>
-                                    <div class="item-status">
-                                        <span class="status-tag red">FRAUD</span>
-                                    </div>
-                                </div>
-                                <div class="feed-item">
-                                    <div class="item-icon"><i class="fas fa-credit-card"></i></div>
-                                    <div class="item-details">
-                                        <p class="user">Transaction #8290</p>
-                                        <p class="meta">Balance: $420 | Income: $45,000</p>
-                                    </div>
-                                    <div class="item-status">
-                                        <span class="status-tag green">SAFE</span>
-                                    </div>
-                                </div>
+                            <div class="chart-container">
+                                <canvas id="fraudChart"></canvas>
                             </div>
                         </div>
                     </div>
+                </section>
+            </div>
 
-                    <!-- Right Column: Predict Simulator -->
-                    <div class="right-col">
-                        <div class="panel predict-simulator">
-                            <div class="panel-header">
-                                <h3>Fraud Simulator</h3>
-                                <button id="stressTestBtn" class="btn-ghost" title="Stress Test (50 Trans)">
-                                    <i class="fas fa-microchip"></i> Simulate Load
-                                </button>
-                            </div>
-                            <form id="predictionForm" class="simulate-form">
-                                <div class="form-group">
-                                    <label>Student Status</label>
-                                    <select id="student" required>
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Credit Balance ($)</label>
-                                    <input type="number" id="balance" placeholder="e.g. 1500" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Annual Income (USD)</label>
-                                    <input type="number" id="income" placeholder="e.g. 45000" required>
-                                </div>
-                                <button type="submit" class="btn-primary">
-                                    <i class="fas fa-microchip"></i> Predict Loan Risk
-                                </button>
-                            </form>
-
-                            <!-- Results and Explanation -->
-                            <div id="resultArea" class="result-area hidden">
-                                <div id="resultBadge" class="result-badge">
-                                    <i id="resultIcon"></i>
-                                    <span id="resultText"></span>
-                                </div>
-                                
-                                <div class="explanation-hub">
-                                    <h4><i class="fas fa-brain"></i> AI Reasoning Radar</h4>
-                                    <div id="riskTierContainer" class="risk-tier-badge">--</div>
-                                    <div id="reasoningList" class="reasoning-list">
-                                        <!-- LIME Reasons go here -->
-                                    </div>
-                                </div>
-
-                                <div class="prob-container">
-                                    <span class="prob-label">Global Risk Probability:</span>
-                                    <div class="prob-bar-bg">
-                                        <div id="probBar" class="prob-bar"></div>
-                                    </div>
-                                    <span id="probValue" class="prob-val">0%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="panel settings-panel">
-                            <h3>Sensitivity Control</h3>
-                            <div class="threshold-control">
-                                <div class="slider-header">
-                                    <span>Catch Rate (Threshold)</span>
-                                    <span id="thresholdVal" class="value-highlight">0.30</span>
-                                </div>
-                                <input type="range" id="thresholdSlider" min="0.05" max="0.95" step="0.05" value="0.30">
-                                <div class="slider-labels">
-                                    <span>High Sensitivity</span>
-                                    <span>Strict</span>
-                                </div>
-                            </div>
-                            <p class="hint">Adjust the threshold to balance between <strong>Recall</strong> (catching defaults) and <strong>Precision</strong> (fewer False Alarms).</p>
-                        </div>
-                    </div>
+            <!-- Placeholder Views -->
+            <div id="view-loan-feed" class="view-section hidden">
+                <div class="placeholder-content">
+                    <i class="fas fa-list-ul"></i>
+                    <h2>Loan Feed</h2>
+                    <p>Coming Soon. Full transaction history will be available here.</p>
                 </div>
+            </div>
 
-                <!-- NEW Analytics Row -->
-                <div class="analytics-row">
-                    <div class="panel chart-panel">
-                        <div class="panel-header">
-                            <h3>Probability Analytics (Live)</h3>
-                            <i class="fas fa-chart-area"></i>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="fraudChart"></canvas>
-                        </div>
-                    </div>
+            <div id="view-risk-hub" class="view-section hidden">
+                <div class="placeholder-content">
+                    <i class="fas fa-user-shield"></i>
+                    <h2>Risk Hub</h2>
+                    <p>Coming Soon. Advanced risk analysis tools are being built.</p>
                 </div>
-            </section>
+            </div>
+
+            <div id="view-settings" class="view-section hidden">
+                <div class="placeholder-content">
+                    <i class="fas fa-cog"></i>
+                    <h2>Settings</h2>
+                    <p>Coming Soon. Configure your dashboard preferences here.</p>
+                </div>
+            </div>
         </main>
     </div>
     <script src="static/script.js"></script>
