@@ -616,3 +616,26 @@ body {
     border-color: var(--accent-blue);
     color: var(--accent-blue);
 }
+/* Placeholder Views */
+.placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 64px;
+}
+
+.placeholder-content i {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    opacity: 0.5;
+}
+
+.placeholder-content h2 {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
