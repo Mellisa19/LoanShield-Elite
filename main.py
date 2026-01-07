@@ -38,6 +38,10 @@ class TransactionData(BaseModel):
     income: float
     threshold: float = 0.3
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "model_loaded": model is not None}
+
 @app.get("/")
 async def read_index():
     from fastapi.responses import FileResponse
