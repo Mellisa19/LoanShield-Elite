@@ -147,6 +147,21 @@
                                         <label>Annual Income (USD)</label>
                                         <input type="number" id="income" placeholder="e.g. 45000" required>
                                     </div>
+
+                                    <!-- Truth Scanner UI -->
+                                    <div class="verification-section">
+                                        <div class="verify-controls">
+                                            <button type="button" id="verifyBtn" class="btn-verify">
+                                                <i class="fas fa-fingerprint"></i> Verify Identity
+                                            </button>
+                                            <span id="verificationStatus" class="verification-status hidden">
+                                                <i class="fas fa-circle-notch fa-spin"></i> Checking Bureau...
+                                            </span>
+                                        </div>
+                                        <div id="verificationResult" class="verification-result hidden">
+                                            <!-- Dynamically populated -->
+                                        </div>
+                                    </div>
                                     <button type="submit" class="btn-primary">
                                         <i class="fas fa-microchip"></i> Predict Loan Risk
                                     </button>
@@ -157,6 +172,11 @@
                                     <div id="resultBadge" class="result-badge">
                                         <i id="resultIcon"></i>
                                         <span id="resultText"></span>
+                                    </div>
+
+                                    <!-- Risk Narrative -->
+                                    <div id="riskNarrative" class="risk-narrative hidden">
+                                        <p id="narrativeText"></p>
                                     </div>
                                     
                                     <div class="explanation-hub">

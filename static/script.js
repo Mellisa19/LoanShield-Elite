@@ -115,6 +115,9 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
         // Add to live feed
         addToFeed(data, result);
 
+        // --- NEW: Risk Narrative ---
+        generateRiskNarrative(result, data);
+
     } catch (err) {
         console.error('Error:', err);
     }
@@ -213,3 +216,83 @@ document.querySelectorAll('.nav-links a').forEach(link => {
         }
     });
 });
+
+// --- Truth Scanner Logic ---
+document.getElementById('verifyBtn').addEventListener('click', () => {
+    const btn = document.getElementById('verifyBtn');
+    const status = document.getElementById('verificationStatus');
+    const resultBox = document.getElementById('verificationResult');
+    const incomeInput = document.getElementById('income');
+
+    // Reset
+    resultBox.classList.add('hidden');
+    resultBox.className = 'verification-result hidden';
+    btn.disabled = true;
+    status.classList.remove('hidden');
+
+    // Simulate API delay
+    setTimeout(() => {
+        status.classList.add('hidden');
+        btn.disabled = false;
+        resultBox.classList.remove('hidden');
+
+        // Random chance of discrepancy (30% for demo purposes)
+        const isDiscrepancy = Math.random() < 0.3;
+
+        if (isDiscrepancy) {
+            // FRAUD SCENARIO
+            const claimedIncome = parseFloat(incomeInput.value) || 0;
+            // If they entered 0 or nothing, default to 50000 for the demo
+            const baseIncome = claimedIncome > 0 ? claimedIncome : 50000;
+            const realIncome = Math.floor(baseIncome * 0.35); // 35% of claimed
+
+            resultBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>ALERT:</strong> Income Mismatch! Tax records show <strong>$${realIncome.toLocaleString()}</strong>. System has auto-corrected the value.`;
+            resultBox.classList.add('warning');
+
+            // Auto-correct
+            incomeInput.value = realIncome;
+            incomeInput.style.border = '1px solid var(--accent-red)';
+            setTimeout(() => incomeInput.style.border = '', 3000);
+
+        } else {
+            // SUCCESS SCENARIO
+            resultBox.innerHTML = `<i class="fas fa-check-circle"></i> <strong>VERIFIED:</strong> Identity & Income confirmed via Equifax.`;
+            resultBox.classList.add('success');
+        }
+    }, 2000);
+});
+
+// --- Risk Narrative Logic ---
+function generateRiskNarrative(result, data) {
+    const narrativeBox = document.getElementById('riskNarrative');
+    const narrativeText = document.getElementById('narrativeText');
+
+    narrativeBox.classList.remove('hidden');
+
+    let text = "";
+    if (result.is_fraud) {
+        text = `<strong>⚠️ Risk Warning:</strong> This loan application has been flagged as <strong>High Risk</strong>. `;
+
+        // Dynamic reason based on top LIME factor
+        const topReason = result.explanation[0];
+        if (topReason) {
+            if (topReason.feature.includes('balance') && topReason.impact === 'Increases Risk') {
+                text += `The primary concern is the <strong>Credit Balance</strong> ($${data.balance.toLocaleString()}), which is critically high relative to the applicant's profile. `;
+            } else if (topReason.feature.includes('income') && topReason.impact === 'Increases Risk') {
+                text += `The reported <strong>Annual Income</strong> ($${data.income.toLocaleString()}) appears insufficient to support additional credit lines. `;
+            } else if (topReason.feature.includes('student') && topReason.impact === 'Increases Risk') {
+                text += `The student status combined with current debt levels fits a known default pattern. `;
+            } else {
+                text += `Historical data indicates that applicants with this specific financial profile have a high rate of default. `;
+            }
+        }
+
+        text += `Recommendation is to <strong>Reject</strong> or require a co-signer.`;
+    } else {
+        text = `<strong>✅ Approval Recommended:</strong> This application passes all security checks. `;
+        text += `The applicant maintains a healthy balance-to-income ratio. `;
+        text += `System confidence is high (${(Math.max((1 - result.probability), result.probability) * 100).toFixed(1)}%).`;
+    }
+
+    narrativeText.innerHTML = text;
+}
