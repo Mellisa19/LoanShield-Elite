@@ -217,51 +217,6 @@ document.querySelectorAll('.nav-links a').forEach(link => {
     });
 });
 
-// --- Truth Scanner Logic ---
-document.getElementById('verifyBtn').addEventListener('click', () => {
-    const btn = document.getElementById('verifyBtn');
-    const status = document.getElementById('verificationStatus');
-    const resultBox = document.getElementById('verificationResult');
-    const incomeInput = document.getElementById('income');
-
-    // Reset
-    resultBox.classList.add('hidden');
-    resultBox.className = 'verification-result hidden';
-    btn.disabled = true;
-    status.classList.remove('hidden');
-
-    // Simulate API delay
-    setTimeout(() => {
-        status.classList.add('hidden');
-        btn.disabled = false;
-        resultBox.classList.remove('hidden');
-
-        // Random chance of discrepancy (30% for demo purposes)
-        const isDiscrepancy = Math.random() < 0.3;
-
-        if (isDiscrepancy) {
-            // FRAUD SCENARIO
-            const claimedIncome = parseFloat(incomeInput.value) || 0;
-            // If they entered 0 or nothing, default to 50000 for the demo
-            const baseIncome = claimedIncome > 0 ? claimedIncome : 50000;
-            const realIncome = Math.floor(baseIncome * 0.35); // 35% of claimed
-
-            resultBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>ALERT:</strong> Income Mismatch! Tax records show <strong>$${realIncome.toLocaleString()}</strong>. System has auto-corrected the value.`;
-            resultBox.classList.add('warning');
-
-            // Auto-correct
-            incomeInput.value = realIncome;
-            incomeInput.style.border = '1px solid var(--accent-red)';
-            setTimeout(() => incomeInput.style.border = '', 3000);
-
-        } else {
-            // SUCCESS SCENARIO
-            resultBox.innerHTML = `<i class="fas fa-check-circle"></i> <strong>VERIFIED:</strong> Identity & Income confirmed via Equifax.`;
-            resultBox.classList.add('success');
-        }
-    }, 2000);
-});
-
 // --- Risk Narrative Logic ---
 function generateRiskNarrative(result, data) {
     const narrativeBox = document.getElementById('riskNarrative');

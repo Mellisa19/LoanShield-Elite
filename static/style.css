@@ -616,6 +616,7 @@ body {
     border-color: var(--accent-blue);
     color: var(--accent-blue);
 }
+
 /* Placeholder Views */
 .placeholder-content {
     display: flex;
@@ -733,62 +734,7 @@ body {
     }
 }
 
-/* Truth Scanner UI */
-.verification-section {
-    margin-bottom: 24px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px dashed var(--border-color);
-}
 
-.verify-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.btn-verify {
-    background: transparent;
-    border: 1px solid var(--accent-blue);
-    color: var(--accent-blue);
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s;
-}
-
-.btn-verify:hover {
-    background: rgba(56, 189, 248, 0.1);
-}
-
-.verification-status {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.verification-result {
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-.verification-result.success {
-    background: rgba(34, 197, 94, 0.1);
-    color: var(--accent-green);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-.verification-result.warning {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--accent-red);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-}
 
 /* Risk Narrative */
 .risk-narrative {
