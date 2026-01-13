@@ -1,253 +1,248 @@
-// --- Initialize Chart.js ---
-const ctx = document.getElementById('fraudChart').getContext('2d');
-let fraudChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Risk Probability Trend',
-            data: [],
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: { beginAtZero: true, max: 1, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
-            x: { grid: { display: false }, border: { display: false } }
-        },
-        plugins: { legend: { display: false } }
-    }
-});
-
 // --- State ---
-let currentThreshold = 0.3;
+let state = {
+    purpose: '',
+    loan: 15000,
+    income: 60000,
+    debt: 5000,
+    employed: 'Yes',
+    debounceTimer: null
+};
+
+// --- Category-Specific Configurations ---
+const categoryConfig = {
+    Business: {
+        icon: '💼',
+        tagline: 'Fuel Your Growth',
+        story: `<strong>Did you know?</strong> 82% of small businesses fail due to cash flow problems. 
+                A well-timed business loan can be the difference between scaling up and shutting down. 
+                <em>Let's see if your numbers tell a success story.</em>`,
+        loanRange: { min: 5000, max: 100000, default: 25000, step: 1000 },
+        incomeRange: { min: 30000, max: 500000, default: 80000, step: 5000 },
+        tip: '💡 Tip: Strong monthly revenue and low existing debt significantly boost approval odds.'
+    },
+    Home: {
+        icon: '🏠',
+        tagline: 'Build Your Future',
+        story: `<strong>Your dream home awaits.</strong> The average homeowner builds $200,000 in wealth 
+                over 30 years through equity. A mortgage isn't just debt—it's an investment in your future. 
+                <em>Let's check your readiness.</em>`,
+        loanRange: { min: 50000, max: 500000, default: 150000, step: 5000 },
+        incomeRange: { min: 40000, max: 400000, default: 75000, step: 5000 },
+        tip: '💡 Tip: A 20% down payment eliminates PMI and gets you the best rates.'
+    },
+    Consolidation: {
+        icon: '📊',
+        tagline: 'Simplify Your Debt',
+        story: `<strong>One payment. One rate. One path to freedom.</strong> Americans carry an average 
+                of $6,000 in credit card debt at 20%+ APR. Consolidation can cut that rate in half. 
+                <em>See how much you could save.</em>`,
+        loanRange: { min: 2000, max: 50000, default: 10000, step: 500 },
+        incomeRange: { min: 25000, max: 200000, default: 55000, step: 2500 },
+        tip: '💡 Tip: Consolidating high-interest cards can save thousands in interest over time.'
+    },
+    Personal: {
+        icon: '❤️',
+        tagline: 'Make It Happen',
+        story: `<strong>Life doesn't wait.</strong> Whether it's a wedding, medical expense, or that 
+                once-in-a-lifetime trip—personal loans help you seize the moment responsibly. 
+                <em>Let's make sure the math works.</em>`,
+        loanRange: { min: 1000, max: 25000, default: 5000, step: 500 },
+        incomeRange: { min: 20000, max: 150000, default: 50000, step: 2500 },
+        tip: '💡 Tip: Keeping your debt-to-income ratio under 35% maximizes approval chances.'
+    }
+};
 
 // --- Elements ---
-const thresholdSlider = document.getElementById('thresholdSlider');
-const thresholdVal = document.getElementById('thresholdVal');
-const stressTestBtn = document.getElementById('stressTestBtn');
-
-// --- Listeners ---
-thresholdSlider.addEventListener('input', (e) => {
-    currentThreshold = parseFloat(e.target.value);
-    thresholdVal.innerText = currentThreshold.toFixed(2);
-});
-
-document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const data = {
-        student: document.getElementById('student').value,
-        balance: parseFloat(document.getElementById('balance').value),
-        income: parseFloat(document.getElementById('income').value),
-        threshold: currentThreshold
-    };
-
-    const resultArea = document.getElementById('resultArea');
-    const resultBadge = document.getElementById('resultBadge');
-    const resultIcon = document.getElementById('resultIcon');
-    const resultText = document.getElementById('resultText');
-    const probBar = document.getElementById('probBar');
-    const probValue = document.getElementById('probValue');
-    const reasoningList = document.getElementById('reasoningList');
-    const riskTierContainer = document.getElementById('riskTierContainer');
-
-    try {
-        const response = await fetch('/predict', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        // Show result area
-        resultArea.classList.remove('hidden');
-
-        // Update badge
-        if (result.is_fraud) {
-            resultBadge.className = 'result-badge fraud';
-            resultIcon.className = 'fas fa-exclamation-triangle';
-            resultText.innerText = 'Risk Identified';
-            probBar.className = 'prob-bar fraud';
-        } else {
-            resultBadge.className = 'result-badge safe';
-            resultIcon.className = 'fas fa-check-shield';
-            resultText.innerText = 'Loan Secure';
-            probBar.className = 'prob-bar safe';
-        }
-
-        // --- NEW: Risk Tier Update ---
-        riskTierContainer.innerText = result.tier;
-        riskTierContainer.className = `risk-tier-badge ${result.tier.split(' ')[0].toLowerCase()}`;
-
-        // Update probability display
-        const probPct = (result.probability * 100).toFixed(1);
-        probValue.innerText = `${probPct}%`;
-        probBar.style.width = `${probPct}%`;
-
-        // Render AI Reasoning
-        reasoningList.innerHTML = '';
-        result.explanation.forEach(reason => {
-            const item = document.createElement('div');
-            item.className = 'reason-item';
-            const icon = reason.impact === "Increases Risk" ? 'fa-arrow-up' : 'fa-arrow-down';
-            const colorClass = reason.impact === "Increases Risk" ? 'up' : 'down';
-
-            item.innerHTML = `
-                <span>${reason.feature}</span>
-                <span class="reason-impact ${colorClass}">
-                    <i class="fas ${icon}"></i> ${reason.impact}
-                </span>
-            `;
-            reasoningList.appendChild(item);
-        });
-
-        // Update Chart
-        updateChart(result.probability);
-
-        // Add to live feed
-        addToFeed(data, result);
-
-        // --- NEW: Risk Narrative ---
-        generateRiskNarrative(result, data);
-
-    } catch (err) {
-        console.error('Error:', err);
+const dom = {
+    views: {
+        selection: document.getElementById('view-selection'),
+        calculator: document.getElementById('view-calculator')
+    },
+    sliders: {
+        loan: document.getElementById('slider-loan'),
+        income: document.getElementById('slider-income'),
+        debt: document.getElementById('slider-debt')
+    },
+    displays: {
+        loan: document.getElementById('val-loan'),
+        income: document.getElementById('val-income'),
+        debt: document.getElementById('val-debt'),
+        emp: document.getElementById('val-emp')
+    },
+    empBtns: {
+        yes: document.getElementById('btn-emp-yes'),
+        no: document.getElementById('btn-emp-no')
+    },
+    result: {
+        score: document.getElementById('scoreValue'),
+        badge: document.getElementById('riskBadge'),
+        narrative: document.getElementById('narrativeText')
     }
-});
-
-stressTestBtn.addEventListener('click', async () => {
-    stressTestBtn.disabled = true;
-    stressTestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
-
-    try {
-        const response = await fetch('/stress-test', { method: 'POST' });
-        const results = await response.json();
-
-        results.forEach((res, index) => {
-            setTimeout(() => {
-                addToFeed(res, { is_fraud: res.is_fraud, status: res.is_fraud ? 'RISK' : 'SAFE' });
-                if (index % 5 === 0) {
-                    const countElem = document.querySelectorAll('.stat-card .value')[0];
-                    countElem.innerText = (parseInt(countElem.innerText.replace(',', '')) + 5).toLocaleString();
-                }
-            }, index * 100);
-        });
-
-    } catch (err) {
-        console.error('Stress test failed');
-    } finally {
-        stressTestBtn.disabled = false;
-        stressTestBtn.innerHTML = '<i class="fas fa-microchip"></i> Simulate Load';
-    }
-});
-
-function updateChart(prob) {
-    const now = new Date();
-    const label = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-
-    fraudChart.data.labels.push(label);
-    fraudChart.data.datasets[0].data.push(prob);
-
-    if (fraudChart.data.labels.length > 10) {
-        fraudChart.data.labels.shift();
-        fraudChart.data.datasets[0].data.shift();
-    }
-    fraudChart.update();
-}
-
-function addToFeed(data, result) {
-    const feed = document.getElementById('transactionFeed');
-    const item = document.createElement('div');
-    item.className = `feed-item ${result.is_fraud ? 'fraud' : ''}`;
-
-    const id = Math.floor(Math.random() * 9000) + 1000;
-
-    item.innerHTML = `
-        <div class="item-icon"><i class="fas fa-credit-card"></i></div>
-        <div class="item-details">
-            <p class="user">Loan Request #${id}</p>
-            <p class="meta">Balance: $${data.balance.toLocaleString()} | Income: $${data.income.toLocaleString()}</p>
-        </div>
-        <div class="item-status">
-            <span class="status-tag ${result.is_fraud ? 'red' : 'green'}">${result.status.toUpperCase()}</span>
-        </div>
-    `;
-
-    if (feed.firstChild) {
-        feed.insertBefore(item, feed.firstChild);
-    } else {
-        feed.appendChild(item);
-    }
-
-    if (feed.children.length > 8) {
-        feed.removeChild(feed.lastChild);
-    }
-}
+};
 
 // --- Navigation Logic ---
-document.querySelectorAll('.nav-links a').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
+function selectPurpose(purpose) {
+    state.purpose = purpose;
+    const config = categoryConfig[purpose];
 
-        // Remove active class from all links
-        document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
-
-        // Add active class to clicked link
-        link.classList.add('active');
-
-        // Hide all view sections
-        document.querySelectorAll('.view-section').forEach(section => {
-            section.classList.add('hidden');
-        });
-
-        // Show target view
-        const targetId = link.getAttribute('data-target');
-        const targetSection = document.getElementById(targetId);
-        if (targetSection) {
-            targetSection.classList.remove('hidden');
-        }
-    });
-});
-
-// --- Risk Narrative Logic ---
-function generateRiskNarrative(result, data) {
-    const narrativeBox = document.getElementById('riskNarrative');
-    const narrativeText = document.getElementById('narrativeText');
-
-    narrativeBox.classList.remove('hidden');
-
-    let text = "";
-    if (result.is_fraud) {
-        text = `<strong>⚠️ Risk Warning:</strong> This loan application has been flagged as <strong>High Risk</strong>. `;
-
-        // Dynamic reason based on top LIME factor
-        const topReason = result.explanation[0];
-        if (topReason) {
-            if (topReason.feature.includes('balance') && topReason.impact === 'Increases Risk') {
-                text += `The primary concern is the <strong>Credit Balance</strong> ($${data.balance.toLocaleString()}), which is critically high relative to the applicant's profile. `;
-            } else if (topReason.feature.includes('income') && topReason.impact === 'Increases Risk') {
-                text += `The reported <strong>Annual Income</strong> ($${data.income.toLocaleString()}) appears insufficient to support additional credit lines. `;
-            } else if (topReason.feature.includes('student') && topReason.impact === 'Increases Risk') {
-                text += `The student status combined with current debt levels fits a known default pattern. `;
-            } else {
-                text += `Historical data indicates that applicants with this specific financial profile have a high rate of default. `;
-            }
-        }
-
-        text += `Recommendation is to <strong>Reject</strong> or require a co-signer.`;
-    } else {
-        text = `<strong>✅ Approval Recommended:</strong> This application passes all security checks. `;
-        text += `The applicant maintains a healthy balance-to-income ratio. `;
-        text += `System confidence is high (${(Math.max((1 - result.probability), result.probability) * 100).toFixed(1)}%).`;
+    // Update the header to show selected category
+    const categorySpan = document.getElementById('category-name');
+    if (categorySpan) {
+        categorySpan.innerText = purpose;
     }
 
-    narrativeText.innerHTML = text;
+    // Apply category-specific story
+    const storyDiv = document.getElementById('category-story');
+    if (storyDiv && config) {
+        storyDiv.innerHTML = `
+            <p class="story-text">${config.story}</p>
+            <p class="story-tip">${config.tip}</p>
+        `;
+    }
+
+    // Apply category-specific slider ranges and defaults
+    if (config) {
+        // Loan slider
+        dom.sliders.loan.min = config.loanRange.min;
+        dom.sliders.loan.max = config.loanRange.max;
+        dom.sliders.loan.step = config.loanRange.step;
+        dom.sliders.loan.value = config.loanRange.default;
+        state.loan = config.loanRange.default;
+        dom.displays.loan.innerText = formatCurrency(config.loanRange.default);
+
+        // Income slider
+        dom.sliders.income.min = config.incomeRange.min;
+        dom.sliders.income.max = config.incomeRange.max;
+        dom.sliders.income.step = config.incomeRange.step;
+        dom.sliders.income.value = config.incomeRange.default;
+        state.income = config.incomeRange.default;
+        dom.displays.income.innerText = formatCurrency(config.incomeRange.default);
+    }
+
+    // Transition
+    dom.views.selection.classList.remove('active');
+    setTimeout(() => {
+        dom.views.selection.classList.add('hidden');
+        dom.views.calculator.classList.remove('hidden');
+
+        // Small delay to allow display flex to apply before opacity transition
+        setTimeout(() => {
+            dom.views.calculator.classList.add('active');
+        }, 50);
+
+        // Trigger initial calc for this purpose
+        triggerPrediction();
+    }, 300);
 }
+
+function goBack() {
+    dom.views.calculator.classList.remove('active');
+    setTimeout(() => {
+        dom.views.calculator.classList.add('hidden');
+        dom.views.selection.classList.remove('hidden');
+        setTimeout(() => {
+            dom.views.selection.classList.add('active');
+        }, 50);
+    }, 300);
+}
+
+// --- Interaction Logic ---
+function init() {
+    // Sliders
+    Object.keys(dom.sliders).forEach(key => {
+        dom.sliders[key].addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            state[key] = val;
+            dom.displays[key].innerText = formatCurrency(val);
+            triggerPrediction();
+        });
+    });
+
+    // Employment Toggle (Custom Buttons)
+    dom.empBtns.yes.addEventListener('click', () => setEmployed('Yes'));
+    dom.empBtns.no.addEventListener('click', () => setEmployed('No'));
+}
+
+function setEmployed(status) {
+    state.employed = status;
+    dom.displays.emp.innerText = status === 'Yes' ? 'Employed' : 'Unemployed';
+
+    // Visual Toggle
+    dom.empBtns.yes.style.opacity = status === 'Yes' ? '1' : '0.3';
+    dom.empBtns.no.style.opacity = status === 'No' ? '1' : '0.3';
+
+    triggerPrediction();
+}
+
+// --- Utilities ---
+function formatCurrency(num) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+}
+
+// --- backend logic ---
+function triggerPrediction() {
+    clearTimeout(state.debounceTimer);
+    dom.result.badge.innerText = "Analyzing...";
+    dom.result.badge.style.background = "#e5e7eb";
+    dom.result.badge.style.color = "#374151";
+
+    state.debounceTimer = setTimeout(fetchPrediction, 500);
+}
+
+async function fetchPrediction() {
+    const projectedDebt = state.debt + state.loan;
+    const modelEmployed = state.employed === 'No' ? 'No' : 'Yes';
+
+    const payload = {
+        employed: modelEmployed,
+        balance: projectedDebt,
+        income: state.income,
+        threshold: 0.3
+    };
+
+    try {
+        const res = await fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        renderResult(data);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function renderResult(data) {
+    const probPct = Math.round(data.probability * 100);
+    dom.result.score.innerText = `${probPct}%`;
+
+    // Colors
+    const isSafe = (data.tier === 'Low Risk' || data.tier === 'Minimal Risk');
+    dom.result.score.style.color = isSafe ? 'var(--status-safe)' : 'var(--status-danger)';
+
+    dom.result.badge.innerText = isSafe ? "APPROVED" : "REJECTED";
+    dom.result.badge.className = isSafe ? "badge safe" : "badge danger";
+    dom.result.badge.style.background = ""; // reset inline override
+    dom.result.badge.style.color = "white";
+
+    // Narrative
+    const dti = ((state.debt + state.loan) / state.income);
+    let text = "";
+
+    if (isSafe) {
+        text = `<strong>Excellent.</strong> For a <strong>${state.purpose}</strong> loan of this size, your projected DTI (${(dti * 100).toFixed(0)}%) is healthy.`;
+    } else {
+        text = `<strong>High Risk.</strong> Requesting <strong>${formatCurrency(state.loan)}</strong> pushes your debt load too high.`;
+        if (state.employed === 'No') text += ` Employment verification is required.`;
+        else text += ` Consider lowering the amount.`;
+    }
+
+    dom.result.narrative.innerHTML = text;
+}
+
+// Expose checks for onclick
+window.selectPurpose = selectPurpose;
+window.goBack = goBack;
+
+init();

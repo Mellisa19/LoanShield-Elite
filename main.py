@@ -8,19 +8,21 @@ import os
 from lime import lime_tabular
 import random
 
-app = FastAPI(title="LoanShield Elite API")
+app = FastAPI(title="LoanShield Elite API v2")
 
 # Mount static files
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Load model, scaler and LIME requirements
+# Load v2 model artifacts
 try:
-    model = joblib.load('model.pkl')
-    scaler = joblib.load('scaler.pkl')
-    train_sample = joblib.load('train_sample.pkl')
-    feature_names = joblib.load('feature_names.pkl')
+    print("Loading v2 model artifacts...")
+    model = joblib.load('model_v2.pkl')
+    scaler = joblib.load('scaler_v2.pkl')
+    train_sample = joblib.load('train_sample_v2.pkl')
+    # Feature names were saved as list: ['employed', 'bank_balance', 'annual_salary', 'debt_to_income']
+    feature_names = joblib.load('feature_names_v2.pkl')
     
     # Initialize LIME explainer
     explainer = lime_tabular.LimeTabularExplainer(
@@ -29,18 +31,20 @@ try:
         class_names=['Low Risk', 'High Risk'],
         mode='classification'
     )
+    print("Model v2 Loaded Successfully.")
 except Exception as e:
     print(f"Error loading system files: {e}")
+    model = None
 
 class TransactionData(BaseModel):
-    student: str
+    employed: str
     balance: float
     income: float
     threshold: float = 0.3
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "model_loaded": model is not None}
+    return {"status": "healthy", "model_version": "v2", "model_loaded": model is not None}
 
 @app.get("/")
 async def read_index():
@@ -50,27 +54,38 @@ async def read_index():
 @app.post("/predict")
 async def predict_fraud(data: TransactionData):
     try:
-        student_val = 1 if data.student.lower() == "yes" else 0
+        # Feature Engineering for v2
+        employed_val = 1 if data.employed.lower() in ["yes", "employed"] else 0
+        
+        # Guard against zero income division
+        income_safe = data.income if data.income > 0 else 1.0
+        dti = data.balance / income_safe
+        
+        # Prepare DataFrame with exact feature order used in training
         input_df = pd.DataFrame([{
-            'balance': data.balance,
-            'income': data.income,
-            'student_Yes': student_val
+            'employed': employed_val,
+            'bank_balance': data.balance,
+            'annual_salary': data.income,
+            'debt_to_income': dti
         }])
         
+        # Scale
         input_scaled = scaler.transform(input_df)
+        
+        # Predict
         prob = float(model.predict_proba(input_scaled)[0, 1])
         
-        # Use dynamic threshold from request
+        # Use dynamic threshold
         is_high_risk = bool(prob >= data.threshold)
         
-        # --- NEW: Risk Tier Logic ---
+        # Risk Tier Logic
         if prob < 0.1: tier = "Low Risk"
         elif prob < 0.3: tier = "Minimal Risk"
         elif prob < 0.6: tier = "Elevated Risk"
         elif prob < 0.8: tier = "High Risk"
         else: tier = "Critical Risk"
         
-        # --- PHASE 2: Generate LIME Explanation ---
+        # Generate LIME Explanation
         exp = explainer.explain_instance(
             input_scaled[0], 
             model.predict_proba,
@@ -81,7 +96,8 @@ async def predict_fraud(data: TransactionData):
         reasons = []
         for feature, weight in explanation_list:
             impact = "Increases Risk" if weight > 0 else "Decreases Risk"
-            clean_name = feature.split(' ')[0].replace('_Yes', '').capitalize()
+            # Cleaning the name manually if needed, but feature_names passed to explainer should handle it mostly
+            clean_name = feature.split(' ')[0].replace('_', ' ').title()
             reasons.append({"feature": clean_name, "impact": impact, "weight": float(weight)})
 
         return {
@@ -100,17 +116,28 @@ async def stress_test():
     """Generates 50 random transactions to show UI dynamics"""
     results = []
     for _ in range(50):
-        student = random.choice(["Yes", "No"])
-        balance = random.uniform(0, 3000)
-        income = random.uniform(10000, 70000)
+        # Simulate realistic distributions
+        employed = random.choice(["Yes", "No"]) 
+        # Non-defaulters usually have lower balance, Defaulters higher
+        balance = random.uniform(0, 25000)
+        income = random.uniform(30000, 150000)
         
-        student_val = 1 if student == "Yes" else 0
-        input_df = pd.DataFrame([{'balance': balance, 'income': income, 'student_Yes': student_val}])
+        # Feature Calc
+        employed_val = 1 if employed == "Yes" else 0
+        dti = balance / income if income > 0 else 0
+        
+        input_df = pd.DataFrame([{
+            'employed': employed_val, 
+            'bank_balance': balance, 
+            'annual_salary': income,
+            'debt_to_income': dti
+        }])
+        
         input_scaled = scaler.transform(input_df)
         prob = model.predict_proba(input_scaled)[0, 1]
         
         results.append({
-            "student": student,
+            "employed": employed,
             "balance": round(balance, 2),
             "income": round(income, 2),
             "is_fraud": bool(prob >= 0.3)
